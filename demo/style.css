@@ -1,0 +1,514 @@
+/* Harness visualizer. Designed for a projector at 1920x1080 and 1280x720.
+   1rem scales with the window: 20px at 1920x1080. At small heights the page
+   removes chrome and uses a slightly larger rem, so text stays readable. */
+
+:root {
+  /* Colors */
+  --ink: #0b2846;
+  --muted: #3f5266;
+  --bg: #f3f6fa;
+  --panel: #ffffff;
+  --line: #c6d3e0;
+  --line-strong: #6c8096;    /* inactive arrows: grey */
+  --line-quiet: #a9b7c6;     /* arrows that are not part of the current step */
+  --dim: .88;                /* inactive parts: quieter, still readable on a washed-out projector */
+  --model: #0065bd;
+  --model-soft: #e2eefa;
+  --harness: #17694f;
+  --harness-soft: #e5f2ec;
+  --harness-line: #9cc9b6;
+  --now: #f2a900;            /* the one accent: what happens now */
+  --now-soft: #f2a90038;
+  --now-linked: #f2a900aa;
+  --error: #a3231f;
+  --error-soft: #fdecea;
+  /* Type scale. Small sizes have a floor in pixels, so they stay readable at 1280x720. */
+  --t-xs: max(.85rem, 16px);
+  --t-s: max(.92rem, 17px);
+  --t-m: max(1rem, 18px);
+  --t-l: max(1.2rem, 18px);
+  --t-xl: 1.55rem;
+  --t-xxl: 2.3rem;
+  /* Spacing scale */
+  --s1: .4rem;
+  --s2: .8rem;
+  --s3: 1.2rem;
+  --s4: 1.6rem;
+  --radius: .8rem;
+  font-family: Inter, 'Segoe UI', system-ui, sans-serif;
+  font-synthesis: none;
+  color: var(--ink);
+  background: var(--bg);
+}
+html { font-size: clamp(12px, min(1.0417vw, 1.852vh), 26px); }
+* { box-sizing: border-box; }
+body {
+  margin: 0; height: 100vh; overflow: hidden; background: var(--bg);
+  display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto; gap: var(--s2);
+  padding: var(--s2) var(--s4) var(--s2);
+  max-width: 2400px; margin-inline: auto;
+}
+[hidden] { display: none !important; }
+.raw-only { display: none !important; }
+body.raw .raw-only { display: revert !important; }
+
+button, select, textarea { font: inherit; color: inherit; }
+button, select {
+  border: 1px solid var(--line); background: var(--panel); border-radius: .5rem;
+  padding: .35rem .75rem; cursor: pointer; font-size: var(--t-s);
+}
+button:hover:not(:disabled) { border-color: var(--model); background: #eef6ff; }
+button:focus-visible, textarea:focus-visible, select:focus-visible { outline: .18rem solid var(--model); outline-offset: .15rem; }
+button:disabled { opacity: .45; cursor: default; }
+kbd { font: var(--t-xs) Consolas, monospace; color: var(--muted); border: 1px solid var(--line); border-radius: .2rem; padding: 0 .25rem; margin-left: .3rem; }
+
+/* ---------- Top bar ---------- */
+.topbar { display: flex; align-items: center; gap: var(--s3); }
+.brand { font-size: var(--t-xs); font-weight: 800; letter-spacing: .12em; white-space: nowrap; }
+nav { display: flex; gap: var(--s1); flex: 1; justify-content: center; }
+nav button { white-space: nowrap; border-color: transparent; background: none; color: var(--muted); font-size: var(--t-m); padding: .3rem .8rem; }
+nav button.selected { background: var(--model); color: white; font-weight: 700; }
+nav button.selected:hover { background: var(--model); }
+.toolbar { display: flex; align-items: center; gap: var(--s2); }
+.badge { font-size: var(--t-xs); font-weight: 800; letter-spacing: .06em; padding: .35rem .6rem; background: var(--model-soft); border-radius: .35rem; white-space: nowrap; }
+body[data-source="live"] .badge { background: #fde8e7; color: var(--error); }
+.seg { display: inline-flex; align-items: center; padding: .2rem; gap: .2rem; }
+.seg span { padding: .2rem .6rem; border-radius: .35rem; color: var(--muted); }
+.seg[aria-pressed="false"] .seg-simple, .seg[aria-pressed="true"] .seg-raw { background: var(--ink); color: white; font-weight: 700; }
+
+/* ---------- Heading ---------- */
+.heading { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s3); }
+#eyebrow { font-size: var(--t-xs); letter-spacing: .13em; font-weight: 800; color: var(--model); margin: 0 0 .15rem; }
+.title-row { display: flex; align-items: baseline; gap: var(--s3); flex-wrap: wrap; }
+h1 { font-size: var(--t-xxl); letter-spacing: -.03em; line-height: 1.1; margin: 0; }
+#subtitle { margin: 0; font-size: var(--t-l); color: var(--muted); }
+
+/* ---------- Step bar: what happens now ---------- */
+#stepBar {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s4);
+  background: var(--ink); color: white; border-radius: 1rem; padding: .7rem 1.4rem; min-height: 5.6rem;
+}
+.step-count { display: flex; flex-direction: column; align-items: center; min-width: 4.4rem; border-right: 2px solid #ffffff33; padding-right: var(--s3); }
+.step-count small { font-size: var(--t-xs); letter-spacing: .14em; font-weight: 800; color: var(--now); }
+.step-count strong { font-size: 2.3rem; line-height: 1; }
+.step-count span { font-size: var(--t-s); color: #c9d8e8; min-height: 1.1em; }
+.step-text { min-width: 0; }
+#stepCaption { margin: 0; font-size: var(--t-xl); font-weight: 750; letter-spacing: -.01em; line-height: 1.2; }
+#stepCaption::before {
+  content: 'NOW'; font-size: var(--t-xs); letter-spacing: .12em; font-weight: 800; color: var(--ink);
+  background: var(--now); border-radius: .25rem; padding: .15rem .45rem; margin-right: .7rem; vertical-align: .2rem;
+}
+.detail-row { display: flex; align-items: center; gap: var(--s3); margin-top: .3rem; }
+#stepDetail { margin: 0; font-size: var(--t-m); color: #d4e0ec; line-height: 1.35; min-width: 0; }
+#stepDetail code { font-family: Consolas, 'IBM Plex Mono', monospace; color: white; }
+#stepBar.changed .step-text { animation: captionIn .45s ease-out; }
+@keyframes captionIn { from { opacity: 0; transform: translateX(-.7rem); } to { opacity: 1; transform: none; } }
+.step-side { display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; max-width: 32rem; }
+#stepTrail { display: flex; align-items: center; gap: .35rem; font-size: var(--t-m); color: #e6eef7; flex-wrap: wrap; justify-content: flex-end; }
+#stepTrail span { background: #ffffff1a; border-radius: .3rem; padding: .15rem .45rem; white-space: nowrap; }
+#stepTrail span.next { background: none; border: 1px dashed #ffffff99; color: white; }
+#stepTrail b { color: white; }
+#stepTrail i { font-style: normal; color: #ffffffaa; }
+/* Idle and end states: the real actions, one per line. */
+#stepTrail .choices { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .35rem; flex-basis: 100%; }
+#stepTrail .choices span { background: none; border: 1px dashed #ffffff99; color: white; }
+.hint-row { display: flex; align-items: center; gap: var(--s2); }
+.hint-row:not(:has(span:not(:empty):not([hidden]))) { display: none; }
+#stepHint { font-size: var(--t-s); color: var(--now); font-weight: 700; white-space: nowrap; }
+#heldPill { font-size: var(--t-s); color: white; background: #ffffff1f; border: 1px solid #ffffff44; border-radius: 1rem; padding: .1rem .6rem; white-space: nowrap; }
+#heldPill::before { content: '❚❚'; font-size: .75em; margin-right: .4rem; color: var(--now); }
+#recovery { display: flex; gap: var(--s2); flex-shrink: 0; }
+#recovery button { font-size: var(--t-m); font-weight: 700; }
+#recovery .recover-primary { background: white; color: var(--error); border-color: white; padding-inline: 1.1rem; }
+#recoverReplay { background: none; color: white; border-color: #ffffffaa; font-weight: 600; }
+#recoverReplay:hover { background: #ffffff22 !important; }
+body.is-waiting #stepCaption::before { content: 'WAITING'; }
+body.is-error #stepBar { background: var(--error); }
+body.is-error #stepCaption::before { content: 'ERROR'; background: white; color: var(--error); }
+body.is-error .step-count small { color: white; }
+body.is-error #stepDetail { color: white; }
+
+/* ---------- Main: diagram and conversation ---------- */
+main { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: var(--s3); min-height: 0; }
+.inspector { background: var(--panel); border: 1px solid #d6e0ea; border-radius: 1rem; padding: var(--s3); min-height: 0; }
+/* The frame keeps one border width in all stages, so nothing moves when stage 5
+   turns it into the dashed harness boundary. */
+.diagram {
+  background: var(--panel); border: 2px solid #dbe3ec; border-radius: 1rem; min-height: 0;
+  padding: 2.9rem var(--s4) var(--s3); position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: var(--s3);
+}
+body[data-stage="5"] .diagram { border-style: dashed; border-color: var(--harness); background: #fbfefc; }
+.outer-label { position: absolute; top: .8rem; left: var(--s4); font-size: var(--t-m); letter-spacing: .1em; font-weight: 800; color: var(--harness); }
+.outer-label span { color: var(--ink); letter-spacing: 0; font-weight: 600; margin-left: .5rem; }
+.outer-label span::before { content: '— '; color: var(--muted); }
+/* Error: the agent program (the harness) stopped. Its frame and status label are red. */
+#programStatus {
+  position: absolute; top: .6rem; right: var(--s4); z-index: 3; display: flex; align-items: baseline; gap: .7rem;
+  background: var(--error); color: white; border-radius: .5rem; padding: .25rem .8rem; font-size: var(--t-m);
+}
+#programStatus span { font-size: var(--t-s); color: #ffe3e0; }
+body .diagram.failed { border-color: var(--error); border-style: solid; background: #fffafa; }
+
+/* Progressive reveal. Every part has a fixed place in stages 3-5. A part that is
+   not part of the stage yet keeps its space but is invisible. */
+.absent { visibility: hidden; }
+.revealing .is-new { animation: reveal .6s ease-out; }
+@keyframes reveal { from { opacity: 0; transform: translateY(.4rem); } to { opacity: 1; transform: none; } }
+
+/* ---------- The diagram canvas ----------
+   The canvas is a size container. The flow takes its unit (1em) from the canvas
+   size, so the whole diagram scales with the panel, like a picture. Every size in
+   the flow is in em. */
+.canvas { flex: 1; min-height: 0; container-type: size; }
+.flow {
+  --bw: max(2px, .1em);          /* the one border weight */
+  --r: .55em;                    /* box radius; chips use half of it */
+  font-size: clamp(14px, min(4.15cqh, 1.86cqw), 30px);
+  height: 100%; display: grid; align-items: center; align-content: stretch;
+  grid-template-columns: minmax(14.5em, 1.3fr) 2.4em minmax(8.5em, 1fr) 2.4em minmax(11em, 1.1fr) 4.6em minmax(7.2em, .8fr);
+  grid-template-rows: minmax(11.2em, 1.45fr) minmax(4em, .55fr) minmax(7.8em, 1fr);
+  grid-template-areas:
+    "ctx a1 model a2 reply a3 done"
+    "up loop loop loop down parts parts"
+    "add l3 run l2 check parts parts";
+}
+/* Stages 1-2 show only the top row. It gets the whole canvas and a larger unit. */
+body:is([data-stage="1"], [data-stage="2"]) .flow {
+  font-size: clamp(16px, min(7cqh, 2.45cqw), 36px);
+  grid-template-columns: minmax(0, 1.3fr) 2.6em minmax(0, 1fr) 2.6em minmax(0, 1.1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "ctx a1 model a2 reply";
+}
+body:is([data-stage="1"], [data-stage="2"]) .flow > .absent { display: none !important; }
+body:is([data-stage="1"], [data-stage="2"]) :is(#contextArea, #model, #replyNode, #inputNode) { align-self: center; height: 10.5em; }
+
+#inputNode, #contextArea { grid-area: ctx; }
+#aCtxModel { grid-area: a1; } #model { grid-area: model; } #aModelReply { grid-area: a2; } #replyNode { grid-area: reply; }
+#aDone { grid-area: a3; } #doneNode { grid-area: done; }
+#aReturn { grid-area: up; } #loopLabel { grid-area: loop; } #aToolCall { grid-area: down; }
+#addNode { grid-area: add; } #lane3 { grid-area: l3; } #executor { grid-area: run; } #lane2 { grid-area: l2; }
+#checkNode, #bypass { grid-area: check; }
+.ingredients { grid-area: parts; }
+
+/* NEW tag on the parts this stage adds. It disappears while a step runs, so the
+   gold focus stays the only accent. */
+:is(.node, #loopLabel).is-new::before, .outer-label.is-new::after, #aReturn em::before, .context-block.is-new::after, .ingredients.is-new::before {
+  content: 'NEW'; font-size: max(.8em, 15px); font-weight: 800; letter-spacing: .1em; line-height: 1;
+  color: white; background: var(--ink); border-radius: .3em; padding: .25em .45em;
+}
+:is(.node, #loopLabel).is-new::before { position: absolute; top: -.75em; right: .6em; z-index: 2; }
+.ingredients.is-new::before { position: absolute; top: -.2em; right: 0; z-index: 2; }
+.outer-label.is-new::after { margin-left: .8rem; vertical-align: .1rem; font-size: var(--t-xs); }
+.context-block.is-new::after { margin-left: .45em; vertical-align: .1em; font-size: max(.7em, 14px); padding: .15em .3em; }
+#aReturn em::before { display: none; width: max-content; margin: 0 0 .3em auto; }
+body[data-stage="4"] #aReturn em::before { display: block; }
+body.in-run :is(.node, #loopLabel).is-new::before, body.in-run .outer-label.is-new::after,
+body.in-run #aReturn em::before, body.in-run .context-block.is-new::after, body.in-run .ingredients.is-new::before { display: none; }
+
+/* Boxes. White, one border weight, one radius. Color only on the border and the
+   owner label. Only the current element gets a ring (and the model a fill). */
+.node {
+  background: var(--panel); border: var(--bw) solid var(--line); border-radius: var(--r);
+  padding: .6em .9em; display: flex; flex-direction: column; justify-content: center; gap: .15em; min-width: 0;
+  transition: opacity .3s, box-shadow .3s, background .3s; position: relative; align-self: stretch;
+}
+.node .owner { font-size: max(.8em, 16px); letter-spacing: .08em; font-weight: 800; color: var(--muted); }
+.node strong { font-size: 1.3em; line-height: 1.15; }
+.node > span { font-size: 1em; color: var(--muted); line-height: 1.3; overflow-wrap: anywhere; }
+.node.harness { border-color: var(--harness-line); }
+.node.model { border-color: var(--model); color: var(--model); align-items: center; text-align: center; }
+.node.model > span { color: var(--muted); font-size: 1.15em; }
+.node.model strong { font-size: 2.3em; line-height: 1.1; }
+.node.model.active { background: var(--model); color: white; }
+.node.model.active > span { color: #e3effb; }
+.node.model-out { border-color: #8cb7de; }
+.node.model-out .owner { color: var(--model); }
+.node.model-out strong, .node.you strong { font-size: 1.55em; }
+.node.model-out > span, .node.you > span { font-size: 1.15em; }
+.node.you { border-color: #b8c4d1; }
+.node.done { align-items: center; text-align: center; align-self: center; height: 7.2em; }
+.node.done strong { font-size: 1.45em; }
+.node .wait, .node > span.wait { color: var(--muted); }
+/* Bottom row: three harness boxes of the same height. Titles stay on one line. */
+:is(#addNode, #executor, #checkNode) strong { white-space: nowrap; font-size: 1.2em; }
+:is(#addNode, #executor, #checkNode) { padding-inline: .7em; }
+#toolStatus { white-space: pre-line; overflow-wrap: normal; hyphens: manual; }
+/* Second-level text in the harness boxes: at least 22px at 1920x1080. */
+:is(#addNode, #executor, #checkNode, #doneNode) > span { font-size: 1.1em; line-height: 1.25; }
+#checkRule { color: var(--ink); }
+#checkNode { padding-block: .45em; gap: .1em; }
+#checkNote { font-size: .95em !important; color: var(--muted); font-style: italic; }
+#checkRule code { font-family: Consolas, 'IBM Plex Mono', monospace; font-size: .9em; background: #eef2f6; border-radius: .25em; padding: 0 .2em; }
+#checkStatus { font-weight: 700; }
+#checkStatus:not(.wait), #resultSummary:not(.wait) { color: var(--harness); }
+#executor.has-output #toolStatus { color: var(--ink); line-height: 1.25; }
+
+.node-head { display: flex; align-items: baseline; gap: .6em; flex-wrap: wrap; }
+.node-head strong { font-size: 1.45em; }
+#contextSize { font-size: max(.8em, 16px); color: var(--muted); }
+#contextArea { justify-content: flex-start; padding-top: .7em; }
+.blocks { display: flex; flex-wrap: wrap; gap: .4em; margin-top: .5em; align-content: flex-start; }
+/* Context chips: one size in all steps. */
+.context-block {
+  border: none; border-left: .28em solid var(--model); border-radius: calc(var(--r) / 2); padding: .22em .55em;
+  font-size: 1em; line-height: 1.25; font-weight: 600; text-align: left; white-space: nowrap; background: var(--model-soft);
+  transition: opacity .3s, box-shadow .3s;
+}
+.context-block .aka { display: none; }
+body[data-stage="2"]:not(.raw) .context-block .aka { display: block; font-size: .8em; font-weight: 400; color: var(--muted); }
+.context-block .tool-count { font-weight: 400; }
+.context-block small { display: none; font-size: max(.8em, 16px); font-weight: 400; color: var(--muted); margin-left: .35em; }
+body.raw[data-stage="2"] .context-block small { display: inline; }
+.context-block.system { background: #f0f5fb; border-color: #8cb7de; }
+.context-block.tools { background: #f1eff8; border-color: #8a7fc0; }
+.context-block.assistant { background: #eceff3; border-color: var(--ink); }
+.context-block.toolResult { background: #e3f1ea; border-color: var(--harness); }
+.context-block.compactionSummary, .message.compactionSummary { background: #e3f1ea; border-color: var(--harness); }
+.context-block.pending { border-left-style: dashed; background: #fff; outline: 1px dashed var(--line-strong); }
+.context-block.more { background: none; border-left-color: transparent; color: var(--muted); font-weight: 500; }
+
+/* Arrows. One color logic in all stages: grey = inactive, gold = the current
+   transition. While a step runs, the other arrows are muted. */
+.arrow { position: relative; display: block; --c: var(--line-strong); --w: max(3px, .14em); font-style: normal; transition: opacity .3s; }
+.arrow.right, .arrow.left { height: var(--w); align-self: center; background: var(--c); margin: 0 .55em; }
+.arrow.up, .arrow.down { width: var(--w); justify-self: center; align-self: stretch; background: var(--c); margin: 0; }
+.arrow::after { content: ''; position: absolute; border: .45em solid transparent; }
+.arrow.right::after { right: -.55em; top: 50%; transform: translateY(-50%); border-left: .65em solid var(--c); border-right: 0; }
+.arrow.left::after { left: -.55em; top: 50%; transform: translateY(-50%); border-right: .65em solid var(--c); border-left: 0; }
+.arrow.up::after { top: -.1em; left: 50%; transform: translateX(-50%); border-bottom: .65em solid var(--c); border-top: 0; }
+.arrow.down::after { bottom: -.1em; left: 50%; transform: translateX(-50%); border-top: .65em solid var(--c); border-bottom: 0; }
+.arrow em { position: absolute; font-style: normal; font-size: 1em; color: var(--ink); white-space: nowrap; font-weight: 650; line-height: 1.15; }
+.arrow:is(.down, .up) em { left: .7em; top: 50%; transform: translateY(-50%); }
+.arrow.right em { bottom: .6em; left: 50%; transform: translateX(-50%); text-align: center; white-space: normal; width: 4.4em; }
+.arrow.on { --c: var(--now) !important; --w: max(4px, .18em); }
+.arrow.on em { color: var(--ink); }
+body.focusing :is(.arrow, #bypass):not(.on):not(.failed) { --c: var(--line-quiet); }
+body.focusing .arrow:not(.on) em { color: var(--muted); }
+
+/* Stage 3: the way back to the context is secondary (thin, dashed, no label).
+   Stage 4 makes it the new behavior: solid, thicker, labeled "next model call". */
+#aReturn em { display: none; }
+body[data-stage="3"] #aReturn:not(.on) { --w: max(2px, .09em); background: repeating-linear-gradient(to bottom, var(--c) 0 .45em, transparent .45em .8em); }
+:is(body[data-stage="4"], body[data-stage="5"]) #aReturn { --c: #5f738a; }
+:is(body[data-stage="4"], body[data-stage="5"]) #aReturn em { display: block; left: auto; right: .8em; text-align: right; }
+
+/* Stages 3-4 have no permission box: the tool call goes from the reply straight
+   to Run tool. #bypass draws that corner: down from the reply, then left. */
+#bypass {
+  --c: var(--line-strong); --w: max(3px, .14em); display: block; align-self: start; justify-self: start;
+  width: calc(50% + var(--w) / 2); height: calc(50% + var(--w) / 2);
+  border-right: var(--w) solid var(--c); border-bottom: var(--w) solid var(--c); border-bottom-right-radius: .9em;
+  transition: opacity .3s;
+}
+#bypass.on { --c: var(--now); --w: max(4px, .18em); }
+#bypass.absent { display: none; }
+:is(body[data-stage="3"], body[data-stage="4"]) #aToolCall::after { display: none; }
+:is(body[data-stage="3"], body[data-stage="4"]) #lane2 { margin-right: 0; }
+
+/* Stage 4 and 5: the LOOP label with the number of model calls. */
+#loopLabel {
+  position: relative; justify-self: center; align-self: center; display: flex; gap: .6em; align-items: center;
+  font-size: 1.1em; color: var(--harness); background: var(--panel);
+  border: var(--bw) solid var(--harness-line); border-radius: 2em; padding: .25em 1em .25em .65em;
+  transition: box-shadow .3s, background .3s;
+}
+#loopLabel b { letter-spacing: .08em; font-size: 1.2em; display: flex; align-items: center; gap: .3em; white-space: nowrap; }
+#loopLabel b i { font-style: normal; font-size: 1.5em; line-height: 1; }
+#loopLabel span { color: var(--ink); font-weight: 650; white-space: nowrap; }
+body.looping #loopLabel b i { color: #b07a00; }
+#lesson { font-size: var(--t-l); text-align: center; margin: 0; color: var(--muted); }
+/* The stage lesson shows before the run and at its end. During the steps the
+   step bar says what happens; a static sentence would compete with it. */
+body.in-run:not(.answer-done) #lesson { visibility: hidden; }
+.usage { align-self: flex-start; text-align: left; border: none; background: none; color: var(--muted); font-size: var(--t-s); padding: 0; }
+
+/* Stage 5: the parts of the harness, stacked under Done. Short labels only. */
+.ingredients { position: relative; align-self: stretch; display: flex; flex-direction: column; justify-content: center; gap: .45em; padding-left: .9em; }
+.ingredient {
+  display: flex; flex-direction: column; text-align: left; background: var(--panel);
+  border: var(--bw) solid var(--harness-line); border-left: .28em solid var(--harness); border-radius: calc(var(--r) / 2);
+  padding: .3em .6em; font-size: 1em; line-height: 1.2;
+}
+.ingredient { font-size: 1.1em; padding: .4em .65em; }
+.ingredient b { font-weight: 700; }
+.ingredient small { font-size: 1em; color: var(--muted); line-height: 1.25; }
+
+/* ---------- Focus: one primary element, at most one linked element ---------- */
+.focus { box-shadow: 0 0 0 .18rem #fff, 0 0 0 .45rem var(--now), 0 0 0 .9rem var(--now-soft) !important; z-index: 1; }
+.context-block.focus, .message.focus { position: relative; }
+.linked { box-shadow: 0 0 0 .14rem #fff, 0 0 0 .32rem var(--now-linked) !important; }
+#loopLabel.linked { background: #fff4d6; border-color: var(--now); color: var(--ink); }
+body.focusing .flow > .node:not(.focus):not(.linked):not(:has(.focus, .linked)) { opacity: var(--dim); }
+body.focusing .blocks:has(.focus, .linked) > .context-block:not(.focus):not(.linked) { opacity: var(--dim); }
+body.focusing #conversation:has(.focus, .linked) .message:not(.focus):not(.linked) { opacity: var(--dim); }
+.focus { animation: focusPulse 1.1s ease-out 2; }
+@keyframes focusPulse { 0% { filter: brightness(1.04); } 100% { filter: none; } }
+@media (prefers-reduced-motion: reduce) { .focus, #stepBar.changed .step-text, .revealing .is-new { animation: none; } }
+
+/* ---------- Conversation panel ---------- */
+.inspector { display: flex; flex-direction: column; gap: var(--s2); }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); font-size: var(--t-xs); font-weight: 800; letter-spacing: .1em; color: var(--muted); }
+.state { font-size: var(--t-s); letter-spacing: 0; font-weight: 700; padding: .15rem .6rem; border-radius: 1rem; background: #edf1f5; color: var(--ink); }
+.state[data-kind="waiting"] { background: #fff4d6; color: #7a5400; }
+.state[data-kind="error"] { background: var(--error); color: white; }
+.state[data-kind="done"] { background: var(--harness-soft); color: var(--harness); }
+.state[data-kind="ended"] { background: #e4e9ef; color: var(--ink); }
+#conversation { overflow: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--s2); padding: .5rem; margin: -.5rem; }
+.message { border-left: .25rem solid #8cb7de; padding: .45rem .8rem; background: #f3f7fc; border-radius: .3rem; transition: opacity .3s, box-shadow .3s; }
+.message.assistant { background: #f4f5f8; border-color: var(--model); }
+.message.toolResult { border-color: var(--harness); background: #edf7f1; }
+.message.pending { border-left-style: dashed; }
+.message.pending-output { background: #fff; outline: 1px dashed var(--harness-line); }
+.message small { display: block; font-size: var(--t-xs); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .2rem; font-weight: 700; }
+.message small em { font-style: normal; text-transform: none; letter-spacing: 0; color: #7a5400; margin-left: .4rem; }
+.message.error small em { color: var(--error); }
+.message p { font-size: var(--t-l); white-space: pre-wrap; line-height: 1.4; margin: 0; }
+.message code { font-family: Consolas, 'IBM Plex Mono', monospace; font-size: .92em; background: #e3e9f0; padding: 0 .25rem; border-radius: .2rem; }
+.message .call { display: inline-block; font-family: Consolas, monospace; background: var(--model-soft); border: 1px solid #9fc4e8; border-radius: .35rem; padding: .1rem .5rem; }
+.message .raw-json { display: block; font-family: Consolas, monospace; font-size: var(--t-s); color: var(--muted); white-space: pre-wrap; margin-top: .3rem; }
+/* The final answer gets the room: earlier messages shrink to at most two lines each. */
+body.answer-done .message:not(:last-child) { padding-block: .3rem; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: var(--t-m); line-height: 1.35; }
+body.answer-done .message:not(:last-child) small { display: inline; margin: 0 .5rem 0 0; }
+body.answer-done .message:not(:last-child) .to-ctx { display: none; }
+body.answer-done .message:not(:last-child) p { display: inline; font-size: var(--t-m); white-space: normal; color: var(--ink); }
+body.answer-done .message:not(:last-child) p :is(strong, .call) { font-weight: 600; }
+body.answer-done .message:not(:last-child) .call { display: inline; padding: 0 .3rem; }
+body.answer-done .message:last-child p { font-size: var(--t-xl); line-height: 1.35; }
+/* Tool output that the harness has received but not yet added to the conversation. */
+.inspector:has(#staging:not([hidden])) #conversation { flex: 0 1 auto; }
+#staging { border: .15rem dashed var(--harness); border-radius: .5rem; padding: .5rem .8rem; background: #fbfefc; transition: box-shadow .3s; }
+#staging small { display: block; font-size: var(--t-xs); color: var(--harness); letter-spacing: .08em; font-weight: 800; margin-bottom: .25rem; }
+#staging p { margin: 0; font-size: var(--t-l); line-height: 1.4; }
+.empty { font-size: var(--t-l); line-height: 1.5; color: var(--muted); margin: auto; text-align: center; white-space: pre-line; }
+form { display: flex; gap: var(--s2); }
+body.compose-hidden #promptForm { display: none; }
+textarea { resize: none; flex: 1; field-sizing: content; min-height: 2lh; max-height: 5lh; border: 1px solid var(--line); border-radius: .6rem; padding: .5rem .7rem; background: white; font-size: var(--t-m); line-height: 1.35; }
+.primary { background: var(--model); color: white; border-color: var(--model); font-weight: 700; font-size: var(--t-m); min-width: 6.5rem; }
+.primary:hover:not(:disabled) { background: var(--ink); color: white; }
+.primary:disabled { background: #dfe6ee; color: #66788b; border-color: #dfe6ee; opacity: 1; }
+#rawPanel { overflow: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.raw-head { display: flex; align-items: center; gap: var(--s2); font-size: var(--t-s); }
+pre { font-family: Consolas, 'IBM Plex Mono', monospace; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--t-s); line-height: 1.45; margin: .5rem 0; }
+#json { flex: 1; overflow: auto; }
+#json abbr { text-decoration: underline dotted; cursor: help; }
+/* Raw: the selected step's events and the one-line explanation come first and
+   large. The JSON, token and capture lines are secondary. */
+#rawSummary { margin: .6rem 0 .2rem; font-size: var(--t-l); line-height: 1.35; }
+#rawSummary b { display: block; font-size: var(--t-xl); }
+#rawSummary code { font-family: Consolas, 'IBM Plex Mono', monospace; font-size: .95em; background: #eef2f6; border-radius: .25rem; padding: 0 .3rem; }
+#rawSummary ul { margin: .3rem 0; padding-left: 1.2rem; }
+#rawSummary p { margin: .4rem 0 0; padding: .4rem .7rem; border-left: .25rem solid var(--now); background: #fff8e6; border-radius: .3rem; }
+#rawSummary:not([hidden]) + #json { border-top: 1px solid var(--line); padding-top: .5rem; }
+/* Raw: the command and event text are large. Token and capture lines are small metadata. */
+#json { font-size: var(--t-m); line-height: 1.3; color: var(--ink); }
+#rawPanel > small, .usage { font-size: max(.72rem, 14px); color: #6b7c8e; }
+
+/* ---------- Speaker controls ---------- */
+footer { display: flex; flex-direction: column; gap: .35rem; }
+.controls { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.group { display: flex; align-items: center; gap: .45rem; padding: .25rem .5rem; border: 1px solid #d6e0ea; border-radius: .6rem; background: var(--panel); font-size: var(--t-s); }
+.group-label { font-size: var(--t-xs); font-weight: 800; letter-spacing: .1em; color: var(--muted); margin-right: .2rem; }
+.group label { white-space: nowrap; display: flex; align-items: center; gap: .25rem; }
+.group input { accent-color: var(--model); width: .9rem; height: .9rem; }
+.group select { max-width: 17rem; }
+.footnote { display: flex; justify-content: space-between; gap: var(--s3); font-size: var(--t-m); color: var(--muted); }
+#speakerStatus { color: #7a5400; font-weight: 600; }
+.keys { white-space: nowrap; }
+body.is-waiting #stop { border-color: var(--now); background: #fff4d6; font-weight: 700; }
+
+dialog { width: min(1000px, 85vw); max-height: 80vh; border: 1px solid #8cb7de; border-radius: 1rem; padding: var(--s3); color: var(--ink); }
+dialog::backdrop { background: #0b284666; }
+#closeDetail { float: right; }
+
+/* ---------- Error: the path that failed is red ---------- */
+/* The normal flow and the Done branch were not used: they fade back. */
+body.is-error .flow > :not(#contextArea):not(#model) { opacity: .35; }
+.failed { --c: var(--error) !important; }
+.node.failed { box-shadow: 0 0 0 .18rem #fff, 0 0 0 .45rem var(--error) !important; border-color: var(--error) !important; z-index: 1; }
+
+/* ---------- Small projector (1280x720 and similar) ----------
+   Remove chrome so the text can be larger: no key hint line, a compact heading,
+   no group labels. 1rem is 14.5px here. */
+@media (max-height: 820px) and (min-width: 901px) {
+  html { font-size: 14.5px; }
+  body { gap: .6rem; padding-block: .5rem; }
+  .footnote { display: none; }
+  #eyebrow { display: none; }
+  h1 { font-size: 1.9rem; }
+  .heading { margin-top: -.1rem; }
+  #stepBar { min-height: 4.6rem; padding-block: .5rem; }
+  .step-count strong { font-size: 2rem; }
+  .group-label { display: none; }
+  .group { padding: .15rem .35rem; }
+  main { grid-template-columns: minmax(0, 2.25fr) minmax(0, 1fr); gap: var(--s2); }
+  nav button { padding: .3rem .55rem; }
+  .topbar { gap: var(--s2); }
+  .inspector { padding: var(--s2); }
+  .diagram { padding: 2.3rem var(--s2) var(--s2); gap: var(--s2); }
+  .outer-label, #programStatus { top: .55rem; left: var(--s2); }
+  #programStatus { left: auto; right: var(--s2); }
+  /* One line of trail: the previous step and the next one. */
+  #stepTrail:has(> span:nth-of-type(3)) > :is(span:first-child, i:nth-child(2)) { display: none; }
+  /* Larger floors for supporting text: chips, conversation and box details. */
+  :root { --t-xs: 16px; --t-s: 17px; --t-m: 18px; --t-l: 19px; --t-xl: 1.5rem; }
+  #subtitle { display: none; }
+  .brand { display: none; }
+  /* Harness box details: the 16px floor of the unit is enough here; 1.1em would wrap. */
+  :is(#addNode, #executor, #checkNode, #doneNode) > span { font-size: 1em; }
+  /* The diagram unit has a floor of 16px here. */
+  .flow { font-size: clamp(16px, min(4.15cqh, 1.86cqw), 30px); }
+  .flow { grid-template-columns: minmax(14.8em, 1.25fr) 2.2em minmax(7em, .9fr) 2.2em minmax(12em, 1.2fr) 4.4em minmax(7em, .8fr); }
+}
+
+/* Small windows (not a projector): stack and scroll. */
+@media (max-width: 900px) {
+  html { font-size: 14px; }
+  body { height: auto; overflow: auto; }
+  .topbar { flex-wrap: wrap; }
+  main { grid-template-columns: 1fr; }
+  .inspector { height: 32rem; }
+}
+
+/* ---------- Present mode: less text for the audience ----------
+   Explain mode (E) shows everything. Present mode keeps the diagram, the step
+   caption and the conversation. Errors, waiting text and recovery stay visible. */
+body.present :is(#eyebrow, #subtitle, #stepTrail, .outer-label span, #checkNote, #permissions small, .footnote .keys, #source) { display: none; }
+body.present:not(.is-error):not(.is-waiting) #stepDetail { display: none; }
+body.present:not(.is-error):not(.is-waiting) .detail-row:not(:has(#recovery:not([hidden]))) { display: none; }
+/* Speaker controls stay invisible until the mouse is over them. The keys always work. */
+body.present :is(footer, .toolbar) { opacity: 0; transition: opacity .2s; }
+body.present :is(footer, .toolbar):is(:hover, :focus-within) { opacity: 1; }
+
+/* A tool call the permission rule did not allow. */
+:is(#checkStatus, #toolStatus).blocked { color: var(--error); font-weight: 700; }
+
+/* Keep the next key and live execution warning visible while the display is held. */
+body.present #stepHint { font-size: var(--t-s); }
+body.present .hint-row { flex-wrap: wrap; justify-content: flex-end; }
+/* A long caption must wrap before it can push the controls off the projector. */
+.topbar { flex-wrap: wrap; }
+.step-side { min-width: 0; }
+
+/* Long answers scroll as messages; earlier messages must not collapse into slivers. */
+.message { flex-shrink: 0; }
+/* Keep the message blocks inside their box, clear of the return arrow. */
+.blocks { min-height: 0; overflow: auto; }
+
+/* The center line stays at the demo limit, even when the list grows past it. */
+#listMeter { position: relative; flex: none; font-size: max(.9em, 16px); line-height: 1.2; margin-top: .3em; }
+#listMeter span { display: block; }
+#contextArea:has(#listMeter:not([hidden], .absent)) #contextSize { display: none; }
+#listCount { font-weight: 700; }
+.meter-note { color: var(--muted); }
+.meter-track { position: relative; height: .55em; background: #e4e9ef; border-radius: .2em; margin-top: .35em; }
+.meter-track i { position: absolute; left: 50%; top: -.14em; bottom: -.14em; border-left: .15em solid var(--ink); }
+#listFill { height: 100%; border-radius: inherit; background: var(--harness); transition: width .4s; }
+#listMeter.over-limit #listFill { background: #b87900; }
+#listMeter.is-new::after {
+  content: 'NEW'; position: absolute; right: 0; top: -.75em;
+  font-size: max(.72em, 14px); font-weight: 800; color: white; background: var(--ink);
+  border-radius: .3em; padding: .15em .35em;
+}
+body.in-run #listMeter::after { display: none; }
+@media (prefers-reduced-motion: reduce) { #listFill { transition: none; } }

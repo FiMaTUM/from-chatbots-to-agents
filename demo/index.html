@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>From Chatbots to Agents</title><link rel="stylesheet" href="/style.css"></head>
+<body data-stage="1">
+<header class="topbar">
+  <div class="brand">FROM CHATBOTS TO AGENTS</div>
+  <nav aria-label="Talk stages"><button data-stage="1">01 Model</button><button data-stage="2">02 Chat</button><button data-stage="3">03 Tools</button><button data-stage="4">04 Loop</button><button data-stage="5">05 Harness</button></nav>
+  <div class="toolbar"><span id="source" class="badge">OFFLINE · READY</span><button id="mode" class="seg" aria-pressed="false" aria-label="Present or Explain view"><span class="seg-simple">Present</span><span class="seg-raw">Explain</span><kbd>E</kbd></button><button id="raw" class="seg" aria-pressed="false" aria-label="Simple or Raw view"><span class="seg-simple">Simple</span><span class="seg-raw">Raw</span><kbd>R</kbd></button></div>
+</header>
+
+<section class="heading">
+  <div><p id="eyebrow">01 / TEXT IN, TEXT OUT</p><div class="title-row"><h1 id="title">Start with a model.</h1><p id="subtitle">It receives text. It generates text.</p></div></div>
+</section>
+
+<section id="stepBar" aria-live="polite">
+  <div class="step-count"><small>STEP</small><strong id="stepCount">–</strong><span id="stepTotal"></span></div>
+  <div class="step-text">
+    <p id="stepCaption"></p>
+    <div class="detail-row"><p id="stepDetail"></p><div id="recovery" hidden><button id="recoverLive" class="recover-primary">Restart and send ↗</button><button id="recoverReplay">Play the recording instead</button></div></div>
+  </div>
+  <div class="step-side"><div id="stepTrail"></div><div class="hint-row"><span id="heldPill" hidden>Display held · the agent keeps running</span><span id="stepHint"></span></div></div>
+</section>
+
+<main>
+  <section id="diagram" class="diagram">
+    <div class="outer-label" data-from="5">HARNESS <span>calls the model · runs the tools</span></div>
+    <div id="programStatus" hidden><b>✕ Agent program stopped</b><span id="programDetail"></span></div>
+    <div class="canvas"><div class="flow">
+      <div id="inputNode" class="node you" data-until="1"><small class="owner">YOU</small><strong>Text in</strong><span>Your question</span></div>
+      <div id="contextArea" class="node harness context" data-from="2">
+        <div class="node-head"><strong>Messages list</strong><span id="contextSize" class="raw-only"></span></div>
+        <div id="listMeter" data-from="5" hidden>
+          <span id="listCount"></span><span class="meter-note">Small limit for this demo</span>
+          <div class="meter-track" aria-hidden="true"><div id="listFill"></div><i></i></div>
+        </div>
+        <div id="blocks" class="blocks"></div>
+      </div>
+      <i class="arrow right" id="aCtxModel"></i>
+      <div id="model" class="node model"><strong>Model</strong><span id="modelStatus">Idle</span></div>
+      <i class="arrow right" id="aModelReply"></i>
+      <div id="replyNode" class="node model-out"><small class="owner">MODEL OUTPUT</small><strong id="replyLabel">Text out</strong><span id="replyStatus">–</span></div>
+      <i class="arrow right" id="aDone" data-from="4"><em>no tool call</em></i>
+      <div id="doneNode" class="node harness done" data-from="4"><strong>Done</strong><span>Stops the loop</span></div>
+      <i class="arrow up" id="aReturn" data-from="3"><em>next<br>model call</em></i>
+      <div id="loopLabel" data-from="4"><b><i aria-hidden="true">↻</i> LOOP</b><span id="turn">Model calls: 0</span></div>
+      <i class="arrow down" id="aToolCall" data-from="3"><em>tool call</em></i>
+      <div id="addNode" class="node harness" data-from="3"><strong>Add result</strong><span id="resultSummary">–</span></div>
+      <i class="arrow left" id="lane3" data-from="3"></i>
+      <div id="executor" class="node harness" data-from="3"><strong>Run tool</strong><span id="toolStatus">–</span></div>
+      <i class="arrow left" id="lane2" data-from="3"></i>
+      <i id="bypass" data-from="3" data-until="4"></i>
+      <div id="checkNode" class="node harness" data-from="5"><strong>Check permission</strong><span id="checkRule">Read or write <code>goldbach.cjs</code><br>Run only <code>node goldbach.cjs</code></span><span id="checkStatus">–</span><span id="checkNote">shown at tool start</span></div>
+      <div class="ingredients" data-from="5">
+        <button id="permissions" class="ingredient"><b>Permissions</b><small>1 rule</small></button>
+        <button id="contextMgmt" class="ingredient"><b>Context management</b><small>chooses what goes in the messages list</small></button>
+      </div>
+    </div></div>
+    <p id="lesson">The model alone does not run code.</p>
+  </section>
+
+  <section class="inspector">
+    <div class="panel-head"><span id="panelLabel">CONVERSATION</span><span id="state" class="state">Ready</span></div>
+    <div id="conversation" aria-live="polite"></div>
+    <div id="staging" hidden><small>TOOL OUTPUT · READY TO ADD</small><p id="stagingText"></p></div>
+    <div id="rawPanel" hidden><div class="raw-head"><label for="rawSelect">Inspect real data</label><select id="rawSelect"><option value="step">This step’s raw events</option><option value="request">Provider request</option><option value="context">System + messages + tools</option><option value="tool">Tool call + result</option><option value="events">All displayed events</option></select></div><div id="rawSummary" hidden></div><pre id="json"></pre><button id="usage" class="usage">Usage appears when reported</button><small>Provider requests are captured directly. The display may omit words.</small></div>
+    <form id="promptForm"><textarea id="prompt" rows="2" aria-label="Prompt">Is every even n with 4 &lt;= n &lt; 1000 a sum of two primes?</textarea><button class="primary" id="send">Send ↗</button></form>
+  </section>
+</main>
+
+<footer>
+  <div class="controls">
+    <div class="group"><span class="group-label">LIVE</span><button id="live">New live session</button><button id="stop">Stop</button></div>
+    <div class="group"><span class="group-label">REPLAY</span><select id="recordings" aria-label="Recording"><option value="">Choose a recording…</option></select><button id="replay">Replay</button></div>
+    <div class="group"><span class="group-label">DISPLAY</span><label><input type="checkbox" id="slow"> Slow motion</label><label title="Step mode pauses only the display. The agent keeps running."><input type="checkbox" id="stepMode" autocomplete="off"> Step mode</label><button id="step">Next step <kbd>Space</kbd></button></div>
+  </div>
+  <div class="footnote"><span id="notice">Choose live or replay to begin. Tool stages start a fresh live session when tools change.</span><span id="speakerStatus"></span><span class="keys">← → stages · E Present/Explain · R Simple/Raw · Space next step</span></div>
+</footer>
+
+<dialog id="detail"><button id="closeDetail">Close ×</button><h2 id="detailTitle"></h2><pre id="detailText"></pre></dialog><script src="/app.js"></script></body></html>
