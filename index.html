@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>From Chatbots to Agents</title>
+<meta name="description" content="Slides and live demo of the FiMaTUM alumni talk “From Chatbots to Agents: How AI Gets Things Done”, 27 November 2026.">
+<style>
+@font-face{font-family:Inter;src:url('slides/fonts/InterVariable.woff2');font-weight:100 900}
+:root{--bg:#071a2f;--ink:#fff;--soft:#dcebf8;--mute:#8cc4f2;--card:#0b2846;--line:#1d4a74;--accent:#0065bd}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{min-height:100vh;background:radial-gradient(at 75% 20%,#0d4c86 0%,#0b2846 45%,#071a2f 100%) fixed;color:var(--ink);font-family:Inter,system-ui,sans-serif;line-height:1.5}
+main{max-width:1040px;margin:0 auto;padding:72px 24px 48px}
+.k{font-size:14px;font-weight:700;letter-spacing:3px;color:var(--mute);text-transform:uppercase}
+h1{font-size:clamp(40px,7vw,76px);font-weight:800;letter-spacing:-1.5px;line-height:1.05;margin:12px 0 8px}
+.sub{font-size:clamp(20px,3vw,30px);color:var(--soft);margin:0 0 8px}
+.meta{color:var(--mute);margin:0 0 40px}
+.meta a{color:var(--mute)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:20px}
+.card{display:block;background:rgba(11,40,70,.85);border:1px solid var(--line);border-radius:16px;padding:24px;color:var(--ink);text-decoration:none;transition:transform .15s,border-color .15s}
+.card:hover,.card:focus-visible{transform:translateY(-3px);border-color:var(--mute);outline:none}
+.card .t{font-size:24px;font-weight:700;margin:0 0 6px}
+.card p{margin:0 0 14px;color:var(--soft)}
+.card .go{font-weight:700;color:var(--mute)}
+.keys{font-size:14px;color:var(--mute);margin:0}
+kbd{font:600 12px Inter,sans-serif;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;color:var(--soft)}
+.links{margin-top:40px;display:flex;flex-wrap:wrap;gap:12px 28px}
+.links a{color:var(--soft)}
+footer{margin-top:56px;color:var(--mute);font-size:14px}
+</style>
+</head>
+<body>
+<main>
+  <div class="k">FiMaTUM Alumni Talk</div>
+  <h1>From Chatbots to Agents</h1>
+  <p class="sub">How AI Gets Things Done</p>
+  <p class="meta">27 November 2026 · TUM Garching Hochbrück · <a href="https://fimatum.de/events/2026-11-27-from-chatbots-to-agents/">Event page</a></p>
+
+  <div class="cards">
+    <a class="card" href="slides/">
+      <div class="t">Slides</div>
+      <p>All slides of the talk, with their click steps.</p>
+      <p class="keys"><kbd>→</kbd> or <kbd>Space</kbd> next · <kbd>←</kbd> back · <kbd>F</kbd> full screen · <kbd>G</kbd> go to a slide</p>
+      <p class="go" style="margin:14px 0 0">Open the slides →</p>
+    </a>
+    <a class="card" href="demo/dist/harness-replay.html">
+      <div class="t">Live demo</div>
+      <p>Five stages from the talk: model, chat, tools, loop and harness. A replay of real model runs.</p>
+      <p class="keys">Click a stage, then press <kbd>Space</kbd> to go step by step.</p>
+      <p class="go" style="margin:14px 0 0">Open the demo →</p>
+    </a>
+  </div>
+
+  <div class="links">
+    <a href="From%20Chatbots%20to%20Agents.pdf">Slides as PDF</a>
+    <a href="https://github.com/FiMaTUM/from-chatbots-to-agents">Source on GitHub</a>
+    <a href="https://github.com/FiMaTUM/from-chatbots-to-agents/blob/main/demo/README.md">Run the demo with your own model</a>
+  </div>
+
+  <footer>Alexander Kammerer · <a href="https://fimatum.de" style="color:inherit">FiMaTUM Alumni Club</a></footer>
+</main>
+</body>
+</html>

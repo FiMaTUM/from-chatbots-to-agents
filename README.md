@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <a href="https://fimatum.github.io/from-chatbots-to-agents/"><b>Website</b></a> ·
   <a href="https://fimatum.de/events/2026-11-27-from-chatbots-to-agents/"><b>Event page</b></a> ·
   <a href="From%20Chatbots%20to%20Agents.pdf"><b>Slides (PDF)</b></a> ·
   <a href="demo/dist/harness-replay.html"><b>Demo replay</b></a> ·
@@ -30,7 +31,8 @@ Along the way, the audience answered four short polls on their phones.
 
 ## Slides
 
-[**From Chatbots to Agents.pdf**](From%20Chatbots%20to%20Agents.pdf) has all slides of the talk.
+[**Open the slides in your browser**](https://fimatum.github.io/from-chatbots-to-agents/slides/), with all click steps.
+[**From Chatbots to Agents.pdf**](From%20Chatbots%20to%20Agents.pdf) has the same slides as a PDF.
 The last slides are a backup section with more details about the harness and the context.
 
 ## Live demo
@@ -44,7 +46,7 @@ It shows in five stages what the software around a model (the harness) does:
 4. **Loop**: the model writes a Goldbach checker, runs it and decides the next step after each result.
 5. **Harness**: permission checks, and compaction when the list gets too long.
 
-To watch it, download [demo/dist/harness-replay.html](demo/dist/harness-replay.html) and open it in a browser.
+To watch it, [open the demo in your browser](https://fimatum.github.io/from-chatbots-to-agents/demo/dist/harness-replay.html). You can also download [demo/dist/harness-replay.html](demo/dist/harness-replay.html) and open it locally.
 The file needs no server and makes no model calls.
 Click a stage, then press <kbd>Space</kbd> to go step by step.
 
